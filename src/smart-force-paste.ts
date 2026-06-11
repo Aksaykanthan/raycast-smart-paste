@@ -8,6 +8,7 @@ import {
   STOP_FILE,
   tryUnlink,
 } from "./session";
+import { spawnEscapeMonitor } from "./keyboard-monitor";
 
 interface Preferences {
   wpm: string;
@@ -110,9 +111,10 @@ export default async function main() {
 
   // Track own PID so the stop command (or re-run toggle) can detect this session.
   writeFileSync(PID_FILE, String(process.pid), "utf8");
+  const escMonitor = spawnEscapeMonitor();
 
   await showHUD(
-    `⌨️ Typing ${charCount} chars (~${formatDuration(estimatedMs)})`,
+    `⌨️ Typing ${charCount} chars (~${formatDuration(estimatedMs)}) · Esc to stop`,
   );
   await sleep(400);
 
@@ -132,6 +134,7 @@ export default async function main() {
       await showHUD("❌ " + msg.slice(0, 80));
     }
   } finally {
+    escMonitor?.kill();
     tryUnlink(PID_FILE);
     tryUnlink(STOP_FILE);
   }
